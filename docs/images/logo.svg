@@ -1,0 +1,170 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <clipPath id="squircle-clip">
+      <rect x="24" y="24" width="976" height="976" rx="220" />
+    </clipPath>
+
+    <linearGradient id="cyan-glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f5ff"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+
+    <linearGradient id="beak-bright" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#64748b"/>
+      <stop offset="100%" stop-color="#334155"/>
+    </linearGradient>
+
+    <linearGradient id="beak-dark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#090d16"/>
+    </linearGradient>
+
+    <filter id="subtle-shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#000000" flood-opacity="0.18" />
+    </filter>
+  </defs>
+
+  <!-- Luxury White Squircle Container -->
+  <rect x="24" y="24" width="976" height="976" rx="220" fill="#ffffff" stroke="#e2e8f0" stroke-width="6" />
+
+  <g clip-path="url(#squircle-clip)">
+    <g transform="translate(512, 512)" filter="url(#subtle-shadow)">
+
+      <!-- Hexagonal Architectural Gateway -->
+      <polygon points="
+        0,-390
+        338,-195
+        338,195
+        0,390
+        -338,195
+        -338,-195
+      " fill="none" stroke="#0f172a" stroke-width="36" stroke-linejoin="round" />
+
+      <polygon points="
+        0,-355
+        307,-177
+        307,177
+        0,355
+        -307,177
+        -307,-177
+      " fill="none" stroke="#00f5ff" stroke-width="4" opacity="0.45" stroke-dasharray="16, 12" />
+
+      <!-- Watertight Raven Base Silhouette -->
+      <path d="
+        M 0 -290
+        L 70 -260
+        L 140 -200
+        L 190 -120
+        L 245 -20
+        L 210 50
+        L 260 130
+        L 190 200
+        L 220 280
+        L 130 330
+        L 0 375
+        L -130 330
+        L -220 280
+        L -190 200
+        L -260 130
+        L -210 50
+        L -245 -20
+        L -190 -120
+        L -140 -200
+        L -70 -260
+        Z
+      " fill="#070a12" />
+
+      <!-- Crown & Head Crest Facets -->
+      <polygon points="0,-290 70,-260 35,-190 0,-215" fill="#475569" />
+      <polygon points="0,-290 -70,-260 -35,-190 0,-215" fill="#1e293b" />
+
+      <polygon points="70,-260 140,-200 95,-145 35,-190" fill="#334155" />
+      <polygon points="-70,-260 -140,-200 -95,-145 -35,-190" fill="#0f172a" />
+
+      <polygon points="0,-215 35,-190 0,-140" fill="#334155" />
+      <polygon points="0,-215 -35,-190 0,-140" fill="#1e293b" />
+
+      <!-- Temples & Brow -->
+      <polygon points="140,-200 190,-120 130,-90 95,-145" fill="#475569" />
+      <polygon points="-140,-200 -190,-120 -130,-90 -95,-145" fill="#0f172a" />
+
+      <polygon points="0,-140 35,-190 95,-145 50,-85 0,-100" fill="#334155" />
+      <polygon points="0,-140 -35,-190 -95,-145 -50,-85 0,-100" fill="#1e293b" />
+
+      <!-- Predator Eyes (Almond Slanted Sockets) -->
+      <!-- Left Eye -->
+      <polygon points="55,-105 115,-95 90,-70 50,-85" fill="#070a12" stroke="#0f172a" stroke-width="2" />
+      <polygon points="62,-97 106,-90 85,-75 56,-85" fill="url(#cyan-glow)" />
+      <polygon points="80,-93 88,-91 82,-80 77,-82" fill="#ffffff" />
+
+      <!-- Right Eye -->
+      <polygon points="-55,-105 -115,-95 -90,-70 -50,-85" fill="#070a12" stroke="#0f172a" stroke-width="2" />
+      <polygon points="-62,-97 -106,-90 -85,-75 -56,-85" fill="url(#cyan-glow)" />
+      <polygon points="-80,-93 -88,-91 -82,-80 -77,-82" fill="#ffffff" />
+
+      <!-- Flank Feathers (Cheeks & Ear Coverts) -->
+      <polygon points="190,-120 245,-20 170,-10 130,-90" fill="#334155" />
+      <polygon points="-190,-120 -245,-20 -170,-10 -130,-90" fill="#0b0f19" />
+
+      <polygon points="130,-90 170,-10 100,-15 50,-85" fill="#1e293b" />
+      <polygon points="-130,-90 -170,-10 -100,-15 -50,-85" fill="#090d16" />
+
+      <!-- Sharp Powerful Toolmaker Raven Beak -->
+      <!-- Upper Beak (Culmen Ridge) -->
+      <polygon points="0,-100 50,-85 38,40 0,145" fill="url(#beak-bright)" />
+      <polygon points="0,-100 -50,-85 -38,40 0,145" fill="url(#beak-dark)" />
+      <!-- Beak Highlight Line -->
+      <line x1="0" y1="-100" x2="0" y2="145" stroke="#00f5ff" stroke-width="3.5" opacity="0.9" />
+
+      <!-- Lateral Beak Base Plates -->
+      <polygon points="50,-85 100,-15 38,40" fill="#334155" />
+      <polygon points="-50,-85 -100,-15 -38,40" fill="#0f172a" />
+
+      <!-- Lower Beak & Chin (Under Beak Tip) -->
+      <polygon points="0,145 38,40 0,110" fill="#1e293b" />
+      <polygon points="0,145 -38,40 0,110" fill="#090d16" />
+
+      <!-- Throat Gorget & Beard Feathers (Hackle Plumes) -->
+      <polygon points="38,40 100,-15 125,75 0,165" fill="#334155" />
+      <polygon points="-38,40 -100,-15 -125,75 0,165" fill="#0b0f19" />
+
+      <polygon points="0,110 38,40 0,165" fill="#1e293b" />
+      <polygon points="0,110 -38,40 0,165" fill="#070a12" />
+
+      <!-- Wing Shoulders & Outer Hackles -->
+      <polygon points="245,-20 210,50 165,60 170,-10" fill="#1e293b" />
+      <polygon points="-245,-20 -210,50 -165,60 -170,-10" fill="#070a12" />
+
+      <polygon points="210,50 260,130 195,145 165,60" fill="#334155" />
+      <polygon points="-210,50 -260,130 -195,145 -165,60" fill="#090d16" />
+
+      <polygon points="165,60 195,145 125,75" fill="#1e293b" />
+      <polygon points="-165,60 -195,145 -125,75" fill="#070a12" />
+
+      <!-- Lower Breast & Origami Mantle -->
+      <polygon points="0,165 125,75 145,185 0,250" fill="#334155" />
+      <polygon points="0,165 -125,75 -145,185 0,250" fill="#0f172a" />
+
+      <polygon points="195,145 260,130 190,200 145,185" fill="#1e293b" />
+      <polygon points="-195,145 -260,130 -190,200 -145,185" fill="#070a12" />
+
+      <polygon points="145,185 190,200 220,280 130,270 0,250" fill="#1e293b" />
+      <polygon points="-145,185 -190,200 -220,280 -130,270 0,250" fill="#090d16" />
+
+      <!-- Base Plumes -->
+      <polygon points="0,250 130,270 85,340 0,375" fill="#1e293b" />
+      <polygon points="0,250 -130,270 -85,340 0,375" fill="#070a12" />
+
+      <polygon points="130,270 220,280 130,330 85,340" fill="#334155" />
+      <polygon points="-130,270 -220,280 -130,330 -85,340" fill="#0b0f19" />
+
+      <!-- Technological Anchor Nodes -->
+      <circle cx="0" cy="-290" r="5" fill="#00f5ff" />
+      <circle cx="0" cy="375" r="5" fill="#00f5ff" />
+      <circle cx="0" cy="145" r="4" fill="#00f5ff" />
+      <circle cx="338" cy="0" r="4.5" fill="#00f5ff" opacity="0.6" />
+      <circle cx="-338" cy="0" r="4.5" fill="#00f5ff" opacity="0.6" />
+
+    </g>
+  </g>
+</svg>

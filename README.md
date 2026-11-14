@@ -1,16 +1,64 @@
-# toolcraft
+<p align="center">
+  <img src="docs/images/logo.png?raw=true" alt="toolcraft Logo" width="130" style="border-radius: 24px;" />
+</p>
 
-Automated OpenAPI to Model Context Protocol (MCP) compiler, schema hardener, and runtime gateway written in Go.
+<h1 align="center">toolcraft</h1>
+
+<p align="center">
+  <strong>Automated OpenAPI to Model Context Protocol (MCP) compiler, schema hardener, and runtime gateway written in Go.</strong>
+</p>
+
+<p align="center">
+  <a href="https://github.com/alexandrmotologa/toolcraft/actions/workflows/ci.yml"><img src="https://github.com/alexandrmotologa/toolcraft/actions/workflows/ci.yml/badge.svg" alt="CI Status" /></a>
+  <a href="https://golang.org"><img src="https://img.shields.io/badge/Go-1.22+-00ADD8?style=flat&logo=go" alt="Go Version" /></a>
+  <a href="https://modelcontextprotocol.io"><img src="https://img.shields.io/badge/MCP-2024--11--05-7D56F4?style=flat" alt="MCP Protocol" /></a>
+  <a href="https://github.com/alexandrmotologa/toolcraft/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" alt="License" /></a>
+  <img src="https://img.shields.io/badge/RAM_Footprint-%3C_15MB-brightgreen" alt="RAM Footprint" />
+</p>
+
+---
+
+## Overview
 
 toolcraft converts OpenAPI 3.0/3.1, Swagger 2.0, Postman Collections, and cURL snippets into production-ready Model Context Protocol (MCP) servers. It generates standalone single-binary Go servers, typed TypeScript packages with Zod validation, acts directly as an in-memory MCP gateway over stdio and Server-Sent Events (SSE), provides synthetic schema mock servers, and registers servers directly into AI agent clients.
+
+<p align="center">
+  <img src="docs/images/toolcraft_demo.gif?raw=true" alt="toolcraft Workflow Demo" width="900" style="border-radius: 12px; box-shadow: 0 16px 32px rgba(0,0,0,0.4);" />
+</p>
+
+---
+
+## Live Screenshots & Execution Telemetry
+
+### Terminal Execution & Hardening Telemetry
+Authentic CLI session executing schema inspection, token optimization analysis, Go single-binary generation in read-only mode, and automated registration into Claude Desktop.
+
+<p align="center">
+  <img src="docs/images/toolcraft_terminal_run.png?raw=true" alt="Terminal Execution Session" width="900" style="border-radius: 12px; box-shadow: 0 16px 32px rgba(0,0,0,0.4);" />
+</p>
+
+### Interactive Terminal User Interface (TUI)
+Keyboard-driven Bubbletea dashboard enabling endpoint inspection, parameter toggle (`Space`), live test invocation (`x`), and instant code generation (`g`/`t`).
+
+<p align="center">
+  <img src="docs/images/toolcraft_tui.png?raw=true" alt="Terminal UI Dashboard" width="900" style="border-radius: 12px; box-shadow: 0 16px 32px rgba(0,0,0,0.4);" />
+</p>
+
+### Multi-Device Responsive Tools Catalog
+Web documentation generated via `toolcraft catalog --format html`, featuring client-side real-time search, safety badges, and full responsive layout adaptation across Desktop (1440px) and Mobile (390px).
+
+<p align="center">
+  <img src="docs/images/toolcraft_catalog_desktop.png?raw=true" alt="Web Catalog Desktop View" width="620" style="border-radius: 10px; margin-right: 12px; vertical-align: top;" />
+  <img src="docs/images/toolcraft_catalog_mobile.png?raw=true" alt="Web Catalog Mobile View" width="235" style="border-radius: 10px; vertical-align: top;" />
+</p>
 
 ---
 
 ## Key Capabilities
 
-- Universal Specification Support: Ingests local files and remote URLs (HTTP/HTTPS) for OpenAPI 3.0.x, OpenAPI 3.1.x, Swagger 2.0, Postman Collection v2.1, and raw cURL command lines.
+- Universal Specification Ingestion: Reads local files and fetches remote URLs (HTTP/HTTPS with custom headers) for OpenAPI 3.0.x, OpenAPI 3.1.x, Swagger 2.0, Postman Collection v2.1, and raw cURL snippets.
 - Dual-Target Code Generation:
-  - Go Target: Produces idiomatic, zero-dependency Go source code compiling into a single binary (< 15MB RAM footprint).
+  - Go Target: Produces idiomatic Go source code compiling into a portable, zero-dependency executable with under 15MB RAM footprint.
   - TypeScript Target: Produces an ESM npm package using `@modelcontextprotocol/sdk` and `zod` schema validation.
 - Automated Schema Hardening:
   - Redundant parameter pruning: Strips internal trace IDs, debug flags, and proxy headers using regex rules.
@@ -31,8 +79,6 @@ toolcraft converts OpenAPI 3.0/3.1, Swagger 2.0, Postman Collections, and cURL s
 - Export & Documentation:
   - Purifies and exports hardened OpenAPI 3.1 files (`toolcraft sanitize`).
   - Generates interactive Markdown or HTML catalogs with live search (`toolcraft catalog`).
-- Interactive Terminal UI:
-  - Keyboard-driven terminal dashboard to inspect endpoints, test calls (`x`), toggle tools (`Space`), and trigger builds (`g`/`t`).
 
 ---
 
@@ -175,7 +221,7 @@ security:
 
 ---
 
-## CLI Commands
+## CLI Reference
 
 | Command | Description |
 |---|---|
@@ -195,12 +241,18 @@ Full documentation is available in [docs/cli-reference.md](docs/cli-reference.md
 
 ---
 
-## Testing and Verification
+## Verification and Testing
 
 Run test suites across all modules:
 
 ```bash
 make test
+```
+
+Run test suite with race detector and coverage analysis:
+
+```bash
+make test-coverage
 ```
 
 ---

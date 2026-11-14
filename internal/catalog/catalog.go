@@ -169,6 +169,15 @@ func GenerateHTMLCatalog(spec *domain.Spec) string {
     th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid var(--border); }
     th { color: var(--muted); }
     code { background: #111; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+      body { padding: 1rem; }
+      h1 { font-size: 1.35rem; }
+      .meta { font-size: 0.8rem; }
+      .card { padding: 1rem; }
+      .tool-name { font-size: 1.05rem; }
+      table { display: block; overflow-x: auto; }
+      th, td { font-size: 0.8rem; padding: 0.35rem; }
+    }
   </style>
 </head>
 <body>
