@@ -1,0 +1,70 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Inventory Management API",
+    "description": "Legacy microservice for warehouse item management",
+    "version": "2.0.0"
+  },
+  "host": "warehouse.example.com",
+  "basePath": "/api/v2",
+  "schemes": ["https"],
+  "paths": {
+    "/items": {
+      "get": {
+        "summary": "List warehouse items",
+        "description": "Fetches stock inventory with filtering and pagination",
+        "operationId": "listItems",
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Filter items by category"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "type": "integer",
+            "default": 50,
+            "required": false,
+            "description": "Maximum number of items"
+          },
+          {
+            "name": "internal_routing_key",
+            "in": "header",
+            "type": "string",
+            "required": false,
+            "description": "Internal routing header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of items returned"
+          }
+        }
+      }
+    },
+    "/items/{itemId}": {
+      "get": {
+        "summary": "Get item details",
+        "description": "Returns warehouse SKU details and current stock count",
+        "operationId": "getItemById",
+        "parameters": [
+          {
+            "name": "itemId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Unique SKU or item ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Item details object"
+          }
+        }
+      }
+    }
+  }
+}

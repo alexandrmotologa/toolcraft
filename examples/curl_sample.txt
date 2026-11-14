@@ -1,0 +1,7 @@
+curl -X GET "https://api.weather.example.com/v1/forecast?city=Berlin&days=5&internal_tracking=999" \
+  -H "Accept: application/json" \
+  -H "X-Trace-ID: abcd-1234"
+
+curl -X POST "https://api.weather.example.com/v1/alerts" \
+  -H "Content-Type: application/json" \
+  -d '{"region": "DE-BE", "severity": "warning", "message": "High winds"}'

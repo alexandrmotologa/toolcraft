@@ -1,0 +1,25 @@
+version: "1"
+input:
+  spec_path: "./examples/petstore_openapi3.yaml"
+  spec_type: "openapi_v3"
+
+output:
+  language: "go"
+  output_dir: "./dist/petstore-mcp"
+  server_name: "petstore-mcp-server"
+  version: "1.0.0"
+
+hardening:
+  read_only: false
+  max_parameters_per_tool: 6
+  prune_parameters:
+    - ".*_trace_id"
+    - ".*_shard_.*"
+    - "legacy_.*"
+    - "X-.*"
+  enrich_descriptions: true
+
+security:
+  auth_type: "none"
+  rate_limit_rpm: 120
+  timeout_seconds: 30

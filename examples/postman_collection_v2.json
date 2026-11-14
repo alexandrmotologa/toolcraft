@@ -1,0 +1,71 @@
+{
+  "info": {
+    "_postman_id": "a9812b12-5c8e-4b67-8899-72b1458e0a11",
+    "name": "Billing and Customer Collection",
+    "description": "Collection of customer account endpoints and invoice retrieval",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get Customer Profile",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Client-Trace-Id",
+            "value": "trace-99120"
+          }
+        ],
+        "url": {
+          "raw": "https://api.billing.example.com/v1/customers/:customerId",
+          "protocol": "https",
+          "host": ["api", "billing", "example", "com"],
+          "path": ["v1", "customers", ":customerId"],
+          "variable": [
+            {
+              "key": "customerId",
+              "value": "cust_123",
+              "description": "Unique identifier for customer"
+            }
+          ]
+        },
+        "description": "Fetches verified profile and account billing balance"
+      }
+    },
+    {
+      "name": "List Invoices",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://api.billing.example.com/v1/invoices?status=paid&limit=10",
+          "protocol": "https",
+          "host": ["api", "billing", "example", "com"],
+          "path": ["v1", "invoices"],
+          "query": [
+            {
+              "key": "status",
+              "value": "paid",
+              "description": "Invoice status filter"
+            },
+            {
+              "key": "limit",
+              "value": "10",
+              "description": "Page size"
+            },
+            {
+              "key": "internal_debug",
+              "value": "false",
+              "description": "Internal diagnostics"
+            }
+          ]
+        },
+        "description": "Retrieves recent customer invoices"
+      }
+    }
+  ]
+}
