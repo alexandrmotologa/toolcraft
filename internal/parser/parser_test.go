@@ -1,6 +1,9 @@
 package parser_test
 
 import (
+	"net/http"
+	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -22,7 +25,6 @@ func TestDetectAndParseOpenAPI(t *testing.T) {
 		t.Errorf("expected at least 4 tools, got %d", len(spec.Tools))
 	}
 
-	// Verify specific tools
 	var listPetsFound, getPetFound, createPetFound, deletePetFound bool
 	for _, tool := range spec.Tools {
 		if tool.OriginalID == "listPets" {
@@ -111,5 +113,36 @@ func TestDetectAndParseCurl(t *testing.T) {
 	}
 	if spec.Tools[1].Method != "POST" {
 		t.Errorf("expected second tool to be POST, got %s", spec.Tools[1].Method)
+	}
+}
+
+func TestDetectAndParseRemoteSpec(t *testing.T) {
+	localSamplePath := filepath.Join("..", "..", "examples", "swagger_v2.json")
+	sampleContent, err := os.ReadFile(localSamplePath)
+	if err != nil {
+		t.Fatalf("failed to read sample: %v", err)
+	}
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-Custom-Auth") != "secret123" {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(sampleContent)
+	}))
+	defer ts.Close()
+
+	headers := map[string]string{
+		"X-Custom-Auth": "secret123",
+	}
+
+	spec, err := parser.DetectAndParseWithHeaders(ts.URL+"/api-docs", headers)
+	if err != nil {
+		t.Fatalf("remote spec parse failed: %v", err)
+	}
+
+	if spec.Title != "Inventory Management API" {
+		t.Errorf("expected title 'Inventory Management API', got '%s'", spec.Title)
 	}
 }

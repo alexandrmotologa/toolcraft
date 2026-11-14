@@ -5,12 +5,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/signal"
+	"strings"
+	"syscall"
 
+	"github.com/alexandrmotologa/toolcraft/internal/catalog"
 	"github.com/alexandrmotologa/toolcraft/internal/config"
 	"github.com/alexandrmotologa/toolcraft/internal/generator"
 	"github.com/alexandrmotologa/toolcraft/internal/hardener"
+	"github.com/alexandrmotologa/toolcraft/internal/installer"
+	"github.com/alexandrmotologa/toolcraft/internal/mock"
 	"github.com/alexandrmotologa/toolcraft/internal/parser"
 	"github.com/alexandrmotologa/toolcraft/internal/runtime"
+	"github.com/alexandrmotologa/toolcraft/internal/sanitizer"
 	"github.com/alexandrmotologa/toolcraft/internal/tui"
 	"github.com/alexandrmotologa/toolcraft/internal/version"
 	"github.com/spf13/cobra"
@@ -27,7 +34,7 @@ func main() {
 		Short: "Automated OpenAPI to Model Context Protocol (MCP) compiler and runtime gateway",
 		Long: `toolcraft compiles OpenAPI 3.0/3.1, Swagger 2.0, Postman collections, and cURL
 snippets into production-ready Model Context Protocol (MCP) servers in Go or TypeScript,
-or acts as an immediate in-memory gateway.`,
+or acts as an immediate in-memory gateway with mock servers and client installers.`,
 	}
 
 	rootCmd.PersistentFlags().StringVarP(&cfgPath, "config", "c", "", "Path to toolcraft.yaml manifest")
@@ -38,6 +45,11 @@ or acts as an immediate in-memory gateway.`,
 	rootCmd.AddCommand(newInspectCmd())
 	rootCmd.AddCommand(newInitCmd())
 	rootCmd.AddCommand(newTUICmd())
+	rootCmd.AddCommand(newConfigCmd())
+	rootCmd.AddCommand(newInstallCmd())
+	rootCmd.AddCommand(newSanitizeCmd())
+	rootCmd.AddCommand(newMockCmd())
+	rootCmd.AddCommand(newCatalogCmd())
 	rootCmd.AddCommand(newVersionCmd())
 
 	if err := rootCmd.Execute(); err != nil {
@@ -87,7 +99,7 @@ func loadEffectiveConfig(specFlag, langFlag, outFlag, serverNameFlag, authTypeFl
 	}
 
 	if cfg.Input.SpecPath == "" {
-		return nil, fmt.Errorf("no specification file provided; use --spec <path> or configure input.spec_path in toolcraft.yaml")
+		return nil, fmt.Errorf("no specification file provided; use --spec <path|url> or configure input.spec_path in toolcraft.yaml")
 	}
 
 	return cfg, nil
@@ -104,6 +116,7 @@ func newGenerateCmd() *cobra.Command {
 		authEnvFlag    string
 		rateLimitFlag  int
 		maxParamsFlag  int
+		headerFlag     []string
 	)
 
 	cmd := &cobra.Command{
@@ -115,8 +128,9 @@ func newGenerateCmd() *cobra.Command {
 				return err
 			}
 
+			headers := parseHeaderSlice(headerFlag)
 			fmt.Fprintf(os.Stderr, "Ingesting specification from: %s\n", cfg.Input.SpecPath)
-			spec, err := parser.DetectAndParse(cfg.Input.SpecPath)
+			spec, err := parser.DetectAndParseWithHeaders(cfg.Input.SpecPath, headers)
 			if err != nil {
 				return fmt.Errorf("parsing failed: %w", err)
 			}
@@ -147,7 +161,7 @@ func newGenerateCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&specFlag, "spec", "s", "", "Path to API specification file")
+	cmd.Flags().StringVarP(&specFlag, "spec", "s", "", "Path or URL to API specification file")
 	cmd.Flags().StringVarP(&langFlag, "lang", "l", "go", "Target programming language (go, typescript)")
 	cmd.Flags().StringVarP(&outFlag, "out", "o", "./dist/mcp-server", "Output directory for synthesized code")
 	cmd.Flags().StringVar(&serverNameFlag, "server-name", "mcp-server", "Server name identifier")
@@ -156,6 +170,7 @@ func newGenerateCmd() *cobra.Command {
 	cmd.Flags().StringVar(&authEnvFlag, "auth-env", "", "Environment variable holding target API token")
 	cmd.Flags().IntVar(&rateLimitFlag, "rate-limit", 120, "Rate limit in requests per minute")
 	cmd.Flags().IntVar(&maxParamsFlag, "max-params", 6, "Maximum parameters retained per tool")
+	cmd.Flags().StringSliceVar(&headerFlag, "spec-header", nil, "Custom headers for remote spec fetching (Name: Value)")
 
 	return cmd
 }
@@ -169,6 +184,7 @@ func newServeCmd() *cobra.Command {
 		readOnlyFlag  bool
 		authEnvFlag   string
 		rateLimitFlag int
+		headerFlag    []string
 	)
 
 	cmd := &cobra.Command{
@@ -180,7 +196,8 @@ func newServeCmd() *cobra.Command {
 				return err
 			}
 
-			spec, err := parser.DetectAndParse(cfg.Input.SpecPath)
+			headers := parseHeaderSlice(headerFlag)
+			spec, err := parser.DetectAndParseWithHeaders(cfg.Input.SpecPath, headers)
 			if err != nil {
 				return fmt.Errorf("parsing failed: %w", err)
 			}
@@ -204,13 +221,14 @@ func newServeCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&specFlag, "spec", "s", "", "Path to API specification file")
+	cmd.Flags().StringVarP(&specFlag, "spec", "s", "", "Path or URL to API specification file")
 	cmd.Flags().StringVarP(&transportFlag, "transport", "t", "stdio", "MCP transport mode (stdio, sse)")
 	cmd.Flags().IntVarP(&portFlag, "port", "p", 8080, "HTTP port for SSE transport")
 	cmd.Flags().StringVar(&hostFlag, "host", "127.0.0.1", "Binding host for SSE transport")
 	cmd.Flags().BoolVar(&readOnlyFlag, "read-only", false, "Disallow mutating operations")
 	cmd.Flags().StringVar(&authEnvFlag, "auth-env", "", "Environment variable containing auth token")
 	cmd.Flags().IntVar(&rateLimitFlag, "rate-limit", 120, "Requests per minute limit")
+	cmd.Flags().StringSliceVar(&headerFlag, "spec-header", nil, "Custom headers for remote spec fetching")
 
 	return cmd
 }
@@ -220,6 +238,7 @@ func newInspectCmd() *cobra.Command {
 		specFlag      string
 		jsonOutput    bool
 		maxParamsFlag int
+		headerFlag    []string
 	)
 
 	cmd := &cobra.Command{
@@ -233,10 +252,11 @@ func newInspectCmd() *cobra.Command {
 				}
 			}
 			if specFlag == "" {
-				return fmt.Errorf("missing specification path; pass --spec <path>")
+				return fmt.Errorf("missing specification path; pass --spec <path|url>")
 			}
 
-			spec, err := parser.DetectAndParse(specFlag)
+			headers := parseHeaderSlice(headerFlag)
+			spec, err := parser.DetectAndParseWithHeaders(specFlag, headers)
 			if err != nil {
 				return fmt.Errorf("parsing failed: %w", err)
 			}
@@ -273,9 +293,10 @@ func newInspectCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&specFlag, "spec", "s", "", "Path to API specification file")
+	cmd.Flags().StringVarP(&specFlag, "spec", "s", "", "Path or URL to API specification file")
 	cmd.Flags().BoolVar(&jsonOutput, "json", false, "Output report as JSON")
 	cmd.Flags().IntVar(&maxParamsFlag, "max-params", 6, "Maximum parameters retained per tool")
+	cmd.Flags().StringSliceVar(&headerFlag, "spec-header", nil, "Custom headers for remote spec fetching")
 
 	return cmd
 }
@@ -317,6 +338,9 @@ security:
   auth_type: "none"
   rate_limit_rpm: 120
   timeout_seconds: 30
+  redact_pii: true
+  max_array_items: 10
+  max_response_bytes: 51200
 `
 			if err := os.WriteFile(target, []byte(content), 0644); err != nil {
 				return fmt.Errorf("failed to write %s: %w", target, err)
@@ -361,6 +385,267 @@ func newTUICmd() *cobra.Command {
 	return cmd
 }
 
+func newConfigCmd() *cobra.Command {
+	var (
+		clientFlag     string
+		serverNameFlag string
+		binaryFlag     string
+		specFlag       string
+		authEnvFlag    string
+	)
+
+	cmd := &cobra.Command{
+		Use:   "config",
+		Short: "Display ready-to-copy client configuration snippet (Claude, Cursor, Antigravity)",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if specFlag == "" && cfgPath != "" {
+				loaded, err := config.Load(cfgPath)
+				if err == nil {
+					specFlag = loaded.Input.SpecPath
+				}
+			}
+			if specFlag == "" {
+				return fmt.Errorf("missing specification path; pass --spec <path>")
+			}
+			if serverNameFlag == "" {
+				serverNameFlag = "toolcraft-mcp-server"
+			}
+
+			snippet, err := installer.GenerateSnippet(clientFlag, serverNameFlag, binaryFlag, specFlag, authEnvFlag)
+			if err != nil {
+				return err
+			}
+
+			fmt.Println(snippet)
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVar(&clientFlag, "client", "claude", "Target client agent (claude, cursor, antigravity)")
+	cmd.Flags().StringVar(&serverNameFlag, "server-name", "mcp-server", "MCP server identifier")
+	cmd.Flags().StringVar(&binaryFlag, "binary", "", "Explicit binary command name or path")
+	cmd.Flags().StringVarP(&specFlag, "spec", "s", "", "Path to API specification file")
+	cmd.Flags().StringVar(&authEnvFlag, "auth-env", "", "Environment variable holding auth token")
+
+	return cmd
+}
+
+func newInstallCmd() *cobra.Command {
+	var (
+		clientFlag     string
+		serverNameFlag string
+		binaryFlag     string
+		specFlag       string
+		authEnvFlag    string
+		forceFlag      bool
+	)
+
+	cmd := &cobra.Command{
+		Use:   "install",
+		Short: "Inject an MCP server entry directly into an AI agent client's configuration file",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if specFlag == "" && cfgPath != "" {
+				loaded, err := config.Load(cfgPath)
+				if err == nil {
+					specFlag = loaded.Input.SpecPath
+				}
+			}
+			if specFlag == "" {
+				return fmt.Errorf("missing specification path; pass --spec <path>")
+			}
+			if serverNameFlag == "" {
+				serverNameFlag = "toolcraft-mcp-server"
+			}
+
+			targetFile, err := installer.InstallConfig(clientFlag, serverNameFlag, binaryFlag, specFlag, authEnvFlag, forceFlag)
+			if err != nil {
+				return fmt.Errorf("installation failed: %w", err)
+			}
+
+			fmt.Printf("Successfully registered '%s' into %s configuration:\n  %s\n", serverNameFlag, clientFlag, targetFile)
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVar(&clientFlag, "client", "claude", "Target client agent (claude, cursor, antigravity)")
+	cmd.Flags().StringVar(&serverNameFlag, "server-name", "mcp-server", "MCP server identifier")
+	cmd.Flags().StringVar(&binaryFlag, "binary", "", "Explicit binary command name or path")
+	cmd.Flags().StringVarP(&specFlag, "spec", "s", "", "Path to API specification file")
+	cmd.Flags().StringVar(&authEnvFlag, "auth-env", "", "Environment variable holding auth token")
+	cmd.Flags().BoolVarP(&forceFlag, "force", "f", false, "Overwrite corrupted client config file if present")
+
+	return cmd
+}
+
+func newSanitizeCmd() *cobra.Command {
+	var (
+		specFlag      string
+		outFlag       string
+		maxParamsFlag int
+		readOnlyFlag  bool
+	)
+
+	cmd := &cobra.Command{
+		Use:   "sanitize",
+		Short: "Export a pruned, LLM-optimized OpenAPI 3.1 specification file (YAML or JSON)",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if specFlag == "" {
+				return fmt.Errorf("missing specification path; pass --spec <path>")
+			}
+			if outFlag == "" {
+				outFlag = "./hardened_api.yaml"
+			}
+
+			spec, err := parser.DetectAndParse(specFlag)
+			if err != nil {
+				return fmt.Errorf("parsing failed: %w", err)
+			}
+
+			cfg := config.DefaultConfig().Hardening
+			if maxParamsFlag > 0 {
+				cfg.MaxParametersPerTool = maxParamsFlag
+			}
+			if readOnlyFlag {
+				cfg.ReadOnly = true
+			}
+
+			hardened, report, err := hardener.Harden(spec, cfg)
+			if err != nil {
+				return fmt.Errorf("hardening failed: %w", err)
+			}
+
+			if err := sanitizer.ExportSanitizedOpenAPI(hardened, outFlag); err != nil {
+				return fmt.Errorf("sanitizer export failed: %w", err)
+			}
+
+			fmt.Printf("Successfully exported sanitized OpenAPI 3.1 spec:\n")
+			fmt.Printf("  Destination:       %s\n", outFlag)
+			fmt.Printf("  Tools Retained:    %d\n", report.HardenedOperations)
+			fmt.Printf("  Parameters Pruned: %d\n", report.PrunedParametersCount)
+			fmt.Printf("  Token Reduction:   %.1f%%\n", report.ReductionPercent)
+
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVarP(&specFlag, "spec", "s", "", "Path to API specification file")
+	cmd.Flags().StringVarP(&outFlag, "out", "o", "./hardened_api.yaml", "Destination file path (.yaml or .json)")
+	cmd.Flags().IntVar(&maxParamsFlag, "max-params", 6, "Maximum parameters retained per tool")
+	cmd.Flags().BoolVar(&readOnlyFlag, "read-only", false, "Disallow mutating operations")
+
+	return cmd
+}
+
+func newMockCmd() *cobra.Command {
+	var (
+		specFlag   string
+		portFlag   int
+		hostFlag   string
+		bridgeFlag bool
+	)
+
+	cmd := &cobra.Command{
+		Use:   "mock",
+		Short: "Run an in-memory mock API returning synthetic responses matching spec schemas",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if specFlag == "" {
+				return fmt.Errorf("missing specification path; pass --spec <path>")
+			}
+
+			spec, err := parser.DetectAndParse(specFlag)
+			if err != nil {
+				return fmt.Errorf("parsing failed: %w", err)
+			}
+
+			mockServer := mock.NewMockServer(spec)
+			baseURL, err := mockServer.Start(hostFlag, portFlag)
+			if err != nil {
+				return fmt.Errorf("mock server failed to start: %w", err)
+			}
+
+			fmt.Fprintf(os.Stderr, "Mock API Server listening on: %s\n", baseURL)
+			fmt.Fprintf(os.Stderr, "Endpoints available: %d\n", len(spec.Tools))
+
+			if bridgeFlag {
+				// Run MCP server in stdio mode pointing to this mock server
+				spec.BaseURL = baseURL
+				cfg := config.DefaultConfig()
+				hardened, _, _ := hardener.Harden(spec, cfg.Hardening)
+				mcpSrv := runtime.NewServer(hardened, cfg)
+				fmt.Fprintf(os.Stderr, "MCP Gateway bridged over stdio connected to mock server\n")
+				return mcpSrv.ServeStdio(context.Background(), os.Stdin, os.Stdout)
+			}
+
+			// Block until interrupt signal
+			sigChan := make(chan os.Signal, 1)
+			signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+			fmt.Fprintf(os.Stderr, "Press Ctrl+C to stop mock server.\n")
+			<-sigChan
+
+			ctx, cancel := context.WithTimeout(context.Background(), 2)
+			defer cancel()
+			return mockServer.Stop(ctx)
+		},
+	}
+
+	cmd.Flags().StringVarP(&specFlag, "spec", "s", "", "Path to API specification file")
+	cmd.Flags().IntVarP(&portFlag, "port", "p", 8085, "Listening HTTP port")
+	cmd.Flags().StringVar(&hostFlag, "host", "127.0.0.1", "Binding host interface")
+	cmd.Flags().BoolVar(&bridgeFlag, "bridge-mcp", false, "Bridge MCP stdio transport to mock server")
+
+	return cmd
+}
+
+func newCatalogCmd() *cobra.Command {
+	var (
+		specFlag   string
+		formatFlag string
+		outFlag    string
+	)
+
+	cmd := &cobra.Command{
+		Use:   "catalog",
+		Short: "Generate human and agent readable documentation catalog in Markdown or HTML",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if specFlag == "" {
+				return fmt.Errorf("missing specification path; pass --spec <path>")
+			}
+
+			if outFlag == "" {
+				if strings.ToLower(formatFlag) == "html" {
+					outFlag = "./CATALOG.html"
+				} else {
+					outFlag = "./CATALOG.md"
+				}
+			}
+
+			spec, err := parser.DetectAndParse(specFlag)
+			if err != nil {
+				return fmt.Errorf("parsing failed: %w", err)
+			}
+
+			cfg := config.DefaultConfig().Hardening
+			hardened, _, err := hardener.Harden(spec, cfg)
+			if err != nil {
+				return fmt.Errorf("hardening failed: %w", err)
+			}
+
+			if err := catalog.ExportCatalog(hardened, formatFlag, outFlag); err != nil {
+				return fmt.Errorf("catalog export failed: %w", err)
+			}
+
+			fmt.Printf("Successfully generated tool catalog (%s):\n  %s\n", formatFlag, outFlag)
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVarP(&specFlag, "spec", "s", "", "Path to API specification file")
+	cmd.Flags().StringVarP(&formatFlag, "format", "f", "markdown", "Catalog format (markdown, html)")
+	cmd.Flags().StringVarP(&outFlag, "out", "o", "", "Destination file path")
+
+	return cmd
+}
+
 func newVersionCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",
@@ -369,4 +654,18 @@ func newVersionCmd() *cobra.Command {
 			fmt.Printf("toolcraft v%s (commit: %s, built: %s)\n", version.Version, version.Commit, version.BuildDate)
 		},
 	}
+}
+
+func parseHeaderSlice(headers []string) map[string]string {
+	if len(headers) == 0 {
+		return nil
+	}
+	res := make(map[string]string)
+	for _, h := range headers {
+		parts := strings.SplitN(h, ":", 2)
+		if len(parts) == 2 {
+			res[strings.TrimSpace(parts[0])] = strings.TrimSpace(parts[1])
+		}
+	}
+	return res
 }

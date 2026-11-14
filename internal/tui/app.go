@@ -1,12 +1,14 @@
 package tui
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"github.com/alexandrmotologa/toolcraft/internal/config"
 	"github.com/alexandrmotologa/toolcraft/internal/domain"
 	"github.com/alexandrmotologa/toolcraft/internal/generator"
+	"github.com/alexandrmotologa/toolcraft/internal/runtime"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -16,6 +18,7 @@ type Model struct {
 	Spec       *domain.Spec
 	Report     *domain.HardeningReport
 	Config     *config.Config
+	Proxy      *runtime.Proxy
 	Cursor     int
 	ActivePane int // 0: Tools list, 1: Details pane
 	Width      int
@@ -29,11 +32,12 @@ func NewModel(spec *domain.Spec, report *domain.HardeningReport, cfg *config.Con
 		Spec:       spec,
 		Report:     report,
 		Config:     cfg,
+		Proxy:      runtime.NewProxy(cfg),
 		Cursor:     0,
 		ActivePane: 0,
 		Width:      100,
 		Height:     30,
-		StatusMsg:  "Ready. [Space]: toggle tool, [g]: generate Go, [t]: generate TS, [q]: quit",
+		StatusMsg:  "Ready. [Space]: toggle, [x]: test execute, [g]: gen Go, [t]: gen TS, [q]: quit",
 	}
 }
 
@@ -84,6 +88,35 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.Spec.Tools[i].Enabled = !allEnabled
 			}
 			m.StatusMsg = fmt.Sprintf("All tools toggled: %v", !allEnabled)
+
+		case "x":
+			if len(m.Spec.Tools) > 0 && m.Cursor < len(m.Spec.Tools) {
+				tool := m.Spec.Tools[m.Cursor]
+				sampleArgs := make(map[string]interface{})
+				for _, p := range tool.Parameters {
+					if p.Required {
+						sampleArgs[p.Name] = "test_" + p.Name
+					}
+				}
+				if tool.RequestBody != nil {
+					for _, p := range tool.RequestBody.Properties {
+						if p.Required {
+							sampleArgs[p.Name] = "test_" + p.Name
+						}
+					}
+				}
+
+				resp, err := m.Proxy.ExecuteTool(context.Background(), &tool, m.Spec.BaseURL, sampleArgs)
+				if err != nil {
+					m.StatusMsg = fmt.Sprintf("Tool '%s' execution error: %v", tool.ID, err)
+				} else {
+					truncated := resp
+					if len(truncated) > 60 {
+						truncated = truncated[:60] + "..."
+					}
+					m.StatusMsg = fmt.Sprintf("Executed '%s': %s", tool.ID, truncated)
+				}
+			}
 
 		case "g":
 			// Generate Go

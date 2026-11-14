@@ -14,6 +14,7 @@ import (
 
 	"github.com/alexandrmotologa/toolcraft/internal/config"
 	"github.com/alexandrmotologa/toolcraft/internal/domain"
+	"github.com/alexandrmotologa/toolcraft/internal/security"
 )
 
 // Proxy handles outbound HTTP execution with credential injection and safety guardrails.
@@ -115,6 +116,15 @@ func (p *Proxy) ExecuteTool(ctx context.Context, tool *domain.ToolDefinition, ba
 	respBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	sanitized, err := security.SanitizeResponseBody(respBytes, security.RedactorOptions{
+		RedactPII:     p.config.Security.RedactPII,
+		MaxArrayItems: p.config.Security.MaxArrayItems,
+		MaxBytes:      p.config.Security.MaxResponseBytes,
+	})
+	if err == nil {
+		return string(sanitized), nil
 	}
 
 	return string(respBytes), nil

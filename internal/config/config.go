@@ -38,14 +38,17 @@ type HardeningConfig struct {
 	EnrichDescriptions   bool     `yaml:"enrich_descriptions"`
 }
 
-// SecurityConfig defines authentication injection and rate limiting.
+// SecurityConfig defines authentication injection, data redaction, and rate limiting.
 type SecurityConfig struct {
-	AuthType       string `yaml:"auth_type"` // "none", "bearer", "apikey", "basic"
-	TokenEnvVar    string `yaml:"token_env_var"`
-	APIKeyHeader   string `yaml:"api_key_header"`
-	APIKeyQuery    string `yaml:"api_key_query"`
-	RateLimitRPM   int    `yaml:"rate_limit_rpm"`
-	TimeoutSeconds int    `yaml:"timeout_seconds"`
+	AuthType         string `yaml:"auth_type"` // "none", "bearer", "apikey", "basic"
+	TokenEnvVar      string `yaml:"token_env_var"`
+	APIKeyHeader     string `yaml:"api_key_header"`
+	APIKeyQuery      string `yaml:"api_key_query"`
+	RateLimitRPM     int    `yaml:"rate_limit_rpm"`
+	TimeoutSeconds   int    `yaml:"timeout_seconds"`
+	RedactPII        bool   `yaml:"redact_pii"`
+	MaxArrayItems    int    `yaml:"max_array_items"`
+	MaxResponseBytes int    `yaml:"max_response_bytes"`
 }
 
 // DefaultConfig returns a configuration struct populated with recommended defaults.
@@ -76,9 +79,12 @@ func DefaultConfig() *Config {
 			EnrichDescriptions: true,
 		},
 		Security: SecurityConfig{
-			AuthType:       "none",
-			RateLimitRPM:   120,
-			TimeoutSeconds: 30,
+			AuthType:         "none",
+			RateLimitRPM:     120,
+			TimeoutSeconds:   30,
+			RedactPII:        true,
+			MaxArrayItems:    10,
+			MaxResponseBytes: 50 * 1024,
 		},
 	}
 }
